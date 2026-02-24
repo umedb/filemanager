@@ -1,0 +1,26 @@
+services:
+  backend:
+    build:
+      context: ./server
+    container_name: file_upload_backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - uploads_data:/app/uploads
+    environment:
+      - NODE_ENV=production
+      - ADMIN_PASSWORD=admin123
+
+  frontend:
+    build:
+      context: ./client
+    container_name: file_upload_frontend
+    ports:
+      - "80:80"
+    volumes:
+      - uploads_data:/app/uploads
+    depends_on:
+      - backend
+
+volumes:
+  uploads_data:
