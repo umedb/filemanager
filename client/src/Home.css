@@ -39,6 +39,7 @@ body {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   margin-top: 1rem;
+  margin-bottom: 0.5rem;
 }
 
 .drop-zone {
@@ -50,38 +51,32 @@ body {
   text-align: center;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
 }
 
 .drop-zone:hover {
   border-color: var(--primary);
   transform: translateY(-4px);
-  box-shadow: 0 25px 30px -5px rgba(0, 0, 0, 0.2);
 }
 
 .drop-zone.dragging {
   border-color: var(--primary);
   background: rgba(99, 102, 241, 0.1);
-  transform: scale(1.02);
 }
 
 .drop-zone-icon {
   font-size: 4rem;
-  margin-bottom: 1.5rem;
-  background: var(--primary);
-  -webkit-background-clip: text;
-  color: transparent;
-  display: inline-block;
+  margin-bottom: 1rem;
+  color: var(--primary);
 }
 
 .upload-status {
   margin-top: 1.5rem;
-  padding: 0.75rem 1.5rem;
+  padding: 0.5rem 1rem;
   border-radius: 9999px;
   background: rgba(99, 102, 241, 0.2);
   color: #a5b4fc;
   display: inline-block;
-  font-weight: 500;
 }
 
 .file-grid {
@@ -98,19 +93,50 @@ body {
   border: 1px solid var(--border);
   position: relative;
   transition: all 0.2s;
+  cursor: pointer;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1rem;
 }
 
 .file-card:hover {
-  background: rgba(30, 41, 59, 0.9);
   border-color: var(--primary);
+  background: rgba(30, 41, 59, 0.9);
 }
 
 .file-card.selected {
   border-color: var(--primary);
   background: rgba(99, 102, 241, 0.1);
+}
+
+.checkbox-custom {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  z-index: 2;
+  background: rgba(15, 23, 42, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.file-card.selected .checkbox-custom {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.file-card.selected .checkbox-custom::after {
+  content: '';
+  width: 5px;
+  height: 9px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+  margin-bottom: 2px;
 }
 
 .preview-container {
@@ -133,15 +159,14 @@ body {
 .file-info {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
 }
 
 .file-name {
   font-weight: 600;
+  color: var(--text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: var(--text);
 }
 
 .file-actions {
@@ -155,37 +180,23 @@ body {
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
   border: none;
-  font-size: 0.875rem;
+  transition: all 0.2s;
+  font-size: 0.85rem;
 }
 
-.btn-primary {
-  background: var(--primary);
-  color: white;
-}
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:hover { background: var(--primary-hover); }
 
-.btn-primary:hover {
-  background: var(--primary-hover);
-}
-
-.btn-danger {
-  background: rgba(239, 68, 68, 0.1);
-  color: var(--danger);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-}
-
-.btn-danger:hover {
-  background: var(--danger);
-  color: white;
-}
+.btn-danger { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.2); }
+.btn-danger:hover { background: var(--danger); color: white; }
 
 .bulk-actions {
   position: fixed;
   bottom: 2rem;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(99, 102, 241, 0.9);
+  background: rgba(99, 102, 241, 0.95);
   backdrop-filter: blur(12px);
   padding: 0.6rem 1.2rem;
   border-radius: 16px;
@@ -194,65 +205,11 @@ body {
   align-items: center;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4);
   z-index: 1000;
-  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  font-size: 0.9rem;
+  animation: slideUp 0.3s ease-out;
 }
 
-.bulk-actions span {
-  font-weight: 500;
-  color: white;
-  margin-right: 0.5rem;
-}
-
-.bulk-actions .btn {
-  padding: 0.4rem 0.8rem;
-  font-size: 0.8rem;
-}
-
-@keyframes fadeInDown {
-  from { opacity: 0; transform: translateY(-20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes slideUp {
-  from { opacity: 0; transform: translate(-50%, 20px); }
-  to { opacity: 1; transform: translate(-50%, 0); }
-}
-
-.checkbox-custom {
-  position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  z-index: 2;
-  cursor: pointer;
-  background: rgba(15, 23, 42, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-}
-
-.file-card.selected .checkbox-custom {
-  background: var(--primary);
-  border-color: var(--primary);
-}
-
-.file-card.selected .checkbox-custom::after {
-  content: '';
-  width: 6px;
-  height: 10px;
-  border: solid white;
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
-  margin-bottom: 2px;
-}
-
-/* Modal / Lightbox Styles */
+/* Modal Styles */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -264,9 +221,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 2000;
   padding: 2rem;
-  animation: fadeIn 0.3s ease-out;
 }
 
 .modal-content {
@@ -276,14 +232,12 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1rem;
 }
 
 .modal-image {
   max-width: 100%;
   max-height: 80vh;
   border-radius: 12px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
   object-fit: contain;
 }
 
@@ -294,21 +248,16 @@ body {
   background: none;
   border: none;
   color: white;
-  font-size: 2rem;
+  font-size: 2.5rem;
   cursor: pointer;
-  padding: 0.5rem;
 }
 
-.modal-info {
-  color: white;
-  text-align: center;
-  background: rgba(255, 255, 255, 0.1);
-  padding: 0.5rem 1.5rem;
-  border-radius: 9999px;
-  backdrop-filter: blur(4px);
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+@keyframes slideUp {
+  from { opacity: 0; transform: translate(-50%, 20px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
 }

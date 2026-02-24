@@ -21,23 +21,16 @@ function Home() {
   const [previewFile, setPreviewFile] = useState<UploadedFile | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (files && files.length > 0) {
-      handleUpload(Array.from(files));
-    }
-  };
-
   const isImage = (filename: string) => /\.(jpg|jpeg|png|gif|webp)$/i.test(filename);
 
   const handleUpload = async (files: File[]) => {
     if (files.length === 0) return;
     const formData = new FormData();
     files.forEach(file => formData.append('files', file));
-    setUploadStatus(`Uploading ${files.length} file(s)...`);
+    setUploadStatus(`Uploading...`);
 
     try {
-      const response = await fetch('http://localhost:5000/upload', {
+      const response = await fetch('/upload', {
         method: 'POST',
         body: formData,
       });
@@ -64,7 +57,7 @@ function Home() {
     const password = prompt("Enter admin password to delete:");
     if (!password) return;
     try {
-      const response = await fetch('http://localhost:5000/api/admin/files/delete-bulk', {
+      const response = await fetch('/api/admin/files/delete-bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
         body: JSON.stringify({ filenames: selectedFilenames }),
@@ -80,7 +73,7 @@ function Home() {
   };
 
   const copyUrl = (url: string) => {
-    const fullUrl = `${window.location.origin.replace('5173', '5000')}${url}`;
+    const fullUrl = `${window.location.origin}${url}`;
     navigator.clipboard.writeText(fullUrl);
     alert('URL copied to clipboard!');
   };
@@ -100,7 +93,7 @@ function Home() {
         onDragLeave={() => setIsDragging(false)}
         onDrop={(e) => { e.preventDefault(); setIsDragging(false); handleUpload(Array.from(e.dataTransfer.files)); }}
       >
-        <input type="file" ref={fileInputRef} onChange={handleFileChange} style={{ display: 'none' }} multiple />
+        <input type="file" ref={fileInputRef} onChange={(e) => e.target.files && handleUpload(Array.from(e.target.files))} style={{ display: 'none' }} multiple />
         <div className="drop-zone-icon">+</div>
         <p style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text)' }}>Drop files here or click to browse</p>
         {uploadStatus && <div className="upload-status">{uploadStatus}</div>}
@@ -119,7 +112,7 @@ function Home() {
                 <div className="checkbox-custom"></div>
                 <div className="preview-container">
                   {isImage(file.filename) ? (
-                    <img src={`http://localhost:5000/uploads/${file.filename}`} alt={file.originalName} className="preview-image" />
+                    <img src={`/uploads/${file.filename}`} alt={file.originalName} className="preview-image" />
                   ) : (
                     <div style={{ color: 'var(--text-muted)', fontSize: '2rem' }}>📄</div>
                   )}
@@ -139,26 +132,18 @@ function Home() {
         </div>
       )}
 
-      {/* Modal for Viewing */}
       {previewFile && (
         <div className="modal-overlay" onClick={() => setPreviewFile(null)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <button className="modal-close" onClick={() => setPreviewFile(null)}>&times;</button>
-            <img 
-              src={`http://localhost:5000/uploads/${previewFile.filename}`} 
-              alt={previewFile.originalName} 
-              className="modal-image" 
-            />
-            <div className="modal-info">
-              {previewFile.originalName}
-            </div>
+            <img src={`/uploads/${previewFile.filename}`} alt={previewFile.originalName} className="modal-image" />
           </div>
         </div>
       )}
 
       {selectedFilenames.length > 0 && (
         <div className="bulk-actions">
-          <span>{selectedFilenames.length} selected</span>
+          <span style={{color: 'white', fontWeight: 500}}>{selectedFilenames.length} selected</span>
           <button className="btn btn-danger" onClick={deleteSelected}>Delete</button>
           <button className="btn" style={{ background: 'rgba(255,255,255,0.1)', color: 'white' }} onClick={() => setSelectedFilenames([])}>Cancel</button>
         </div>
