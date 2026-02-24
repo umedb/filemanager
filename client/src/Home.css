@@ -181,19 +181,33 @@ body {
 }
 
 .bulk-actions {
-  position: sticky;
+  position: fixed;
   bottom: 2rem;
   left: 50%;
   transform: translateX(-50%);
-  background: var(--primary);
-  padding: 1rem 2rem;
-  border-radius: 9999px;
+  background: rgba(99, 102, 241, 0.9);
+  backdrop-filter: blur(12px);
+  padding: 0.6rem 1.2rem;
+  border-radius: 16px;
   display: flex;
-  gap: 1.5rem;
+  gap: 1rem;
   align-items: center;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
-  z-index: 100;
-  animation: slideUp 0.3s ease-out;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  font-size: 0.9rem;
+}
+
+.bulk-actions span {
+  font-weight: 500;
+  color: white;
+  margin-right: 0.5rem;
+}
+
+.bulk-actions .btn {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.8rem;
 }
 
 @keyframes fadeInDown {
@@ -208,20 +222,34 @@ body {
 
 .checkbox-custom {
   position: absolute;
-  top: 1rem;
-  right: 1rem;
-  width: 20px;
-  height: 20px;
-  border-radius: 4px;
-  border: 2px solid var(--border);
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
   z-index: 2;
   cursor: pointer;
-  background: var(--card-bg);
+  background: rgba(15, 23, 42, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
 }
 
 .file-card.selected .checkbox-custom {
   background: var(--primary);
   border-color: var(--primary);
+}
+
+.file-card.selected .checkbox-custom::after {
+  content: '';
+  width: 6px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+  margin-bottom: 2px;
 }
 
 /* Modal / Lightbox Styles */
