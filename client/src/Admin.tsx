@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import './Home.css';
 
 interface UploadedFile {
   name: string;
@@ -13,41 +14,38 @@ function Admin() {
   const [password, setPassword] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [error, setError] = useState('');
+  const [selectedFilenames, setSelectedFilenames] = useState<string[]>([]);
+  const [previewFile, setPreviewFile] = useState<UploadedFile | null>(null);
 
   const handleLogin = async () => {
     try {
-      const response = await fetch('/api/admin/verify', {
+      const response = await fetch('http://localhost:5000/api/admin/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password }),
       });
-
       if (response.ok) {
         setIsLoggedIn(true);
-        sessionStorage.setItem('admin-password', password); // Store for session
+        sessionStorage.setItem('admin-password', password);
         setError('');
       } else {
-        setError('Invalid password. Please try again.');
-        setIsLoggedIn(false);
+        setError('Invalid password');
       }
     } catch (err) {
-      setError('An error occurred during login.');
+      setError('An error occurred');
     }
   };
 
-  const fetchFiles = async (currentPassword?: string) => {
-    const pass = currentPassword || sessionStorage.getItem('admin-password');
+  const fetchFiles = async () => {
+    const pass = sessionStorage.getItem('admin-password');
     if (!pass) return;
-
     try {
-      const response = await fetch('/api/admin/files', {
+      const response = await fetch('http://localhost:5000/api/admin/files', {
         headers: { 'X-Admin-Password': pass },
       });
       if (response.ok) {
-        const data = await response.json();
-        setUploadedFiles(data);
-      } else if (response.status === 401) {
-        setError('Session expired or invalid. Please log in again.');
+        setUploadedFiles(await response.json());
+      } else {
         setIsLoggedIn(false);
       }
     } catch (error) {
@@ -56,93 +54,120 @@ function Admin() {
   };
 
   useEffect(() => {
-    const storedPassword = sessionStorage.getItem('admin-password');
-    if (storedPassword) {
-      setPassword(storedPassword);
-      setIsLoggedIn(true);
-    }
+    const stored = sessionStorage.getItem('admin-password');
+    if (stored) { setPassword(stored); setIsLoggedIn(true); }
   }, []);
 
-  useEffect(() => {
-    if (isLoggedIn) {
-      fetchFiles(password);
-    }
-  }, [isLoggedIn]);
+  useEffect(() => { if (isLoggedIn) fetchFiles(); }, [isLoggedIn]);
 
-  const handleDelete = async (filename: string) => {
+  const isImage = (filename: string) => /\.(jpg|jpeg|png|gif|webp)$/i.test(filename);
+
+  const toggleSelect = (filename: string) => {
+    setSelectedFilenames(prev => 
+      prev.includes(filename) ? prev.filter(f => f !== filename) : [...prev, filename]
+    );
+  };
+
+  const deleteSelected = async () => {
     const pass = sessionStorage.getItem('admin-password');
-    if (!pass || !window.confirm(`Are you sure you want to delete ${filename}?`)) {
-      return;
-    }
-
+    if (!pass || !window.confirm(`Delete ${selectedFilenames.length} files?`)) return;
     try {
-      const response = await fetch(`/api/admin/files/${filename}`, {
-        method: 'DELETE',
-        headers: { 'X-Admin-Password': pass },
+      const response = await fetch('http://localhost:5000/api/admin/files/delete-bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Password': pass },
+        body: JSON.stringify({ filenames: selectedFilenames }),
       });
-
       if (response.ok) {
-        alert('File deleted successfully');
-        fetchFiles(pass);
-      } else {
-        alert('Failed to delete file');
+        setUploadedFiles(prev => prev.filter(f => !selectedFilenames.includes(f.name)));
+        setSelectedFilenames([]);
+        alert('Deleted successfully');
       }
     } catch (error) {
-      console.error('Error deleting file:', error);
-      alert('An error occurred during deletion');
+      alert('Error during deletion');
     }
   };
 
   if (!isLoggedIn) {
     return (
-      <div className="Admin-login">
-        <h1>Admin Login</h1>
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Enter admin password"
-        />
-        <button onClick={handleLogin}>Login</button>
-        {error && <p style={{ color: 'red' }}>{error}</p>}
+      <div className="container" style={{ maxWidth: '400px', marginTop: '10vh' }}>
+        <div className="drop-zone" style={{ cursor: 'default' }}>
+          <h2>Admin Login</h2>
+          <input
+            type="password"
+            className="btn"
+            style={{ width: '100%', marginBottom: '1rem', background: '#334155', color: 'white' }}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Enter password"
+          />
+          <button onClick={handleLogin} className="btn btn-primary" style={{ width: '100%' }}>Login</button>
+          {error && <p style={{ color: 'var(--danger)', marginTop: '1rem' }}>{error}</p>}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="Admin">
-      <h1>Admin Panel</h1>
-      <div className="file-list">
-        <h3>Managed Files</h3>
-        {uploadedFiles.length === 0 ? (
-          <p>No files uploaded yet.</p>
-        ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Original Name</th>
-                <th>Upload Date</th>
-                <th>Downloads</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {uploadedFiles.map((file, index) => (
-                <tr key={index}>
-                  <td>{file.originalName}</td>
-                  <td>{new Date(file.uploadDate).toLocaleString()}</td>
-                  <td>{file.downloads}</td>
-                  <td>
-                    <a href={file.url} target="_blank" rel="noopener noreferrer">Download</a>
-                    {' | '}
-                    <button onClick={() => handleDelete(file.name)} style={{ color: 'red' }}>Delete</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+    <div className="container">
+      <header className="app-header">
+        <h1>Admin Panel</h1>
+        <p style={{ color: 'var(--text-muted)' }}>Manage all uploaded files ({uploadedFiles.length})</p>
+      </header>
+
+      <div className="file-grid">
+        {uploadedFiles.map((file) => (
+          <div 
+            key={file.name} 
+            className={`file-card ${selectedFilenames.includes(file.name) ? 'selected' : ''}`}
+            onClick={() => toggleSelect(file.name)}
+          >
+            <div className="checkbox-custom"></div>
+            <div className="preview-container">
+              {isImage(file.name) ? (
+                <img src={`http://localhost:5000/uploads/${file.name}`} alt={file.originalName} className="preview-image" />
+              ) : (
+                <div style={{ color: 'var(--text-muted)', fontSize: '2rem' }}>📄</div>
+              )}
+            </div>
+            <div className="file-info">
+              <span className="file-name">{file.originalName}</span>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                {new Date(file.uploadDate).toLocaleDateString()} • {file.downloads} views/downloads
+              </span>
+            </div>
+            <div className="file-actions" onClick={e => e.stopPropagation()}>
+                {isImage(file.name) && (
+                    <button className="btn btn-primary" onClick={() => setPreviewFile(file)}>View</button>
+                )}
+            </div>
+          </div>
+        ))}
       </div>
+
+      {/* Modal for Viewing */}
+      {previewFile && (
+        <div className="modal-overlay" onClick={() => setPreviewFile(null)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setPreviewFile(null)}>&times;</button>
+            <img 
+              src={`http://localhost:5000/uploads/${previewFile.name}`} 
+              alt={previewFile.originalName} 
+              className="modal-image" 
+            />
+            <div className="modal-info">
+              {previewFile.originalName} • {previewFile.downloads} views
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedFilenames.length > 0 && (
+        <div className="bulk-actions">
+          <span>{selectedFilenames.length} selected</span>
+          <button className="btn btn-danger" onClick={deleteSelected}>Delete</button>
+          <button className="btn" style={{ background: 'rgba(255,255,255,0.1)', color: 'white' }} onClick={() => setSelectedFilenames([])}>Cancel</button>
+        </div>
+      )}
     </div>
   );
 }

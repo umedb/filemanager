@@ -198,6 +198,40 @@ app.delete('/api/admin/files/:filename', isAdmin, (req, res) => {
     }
 });
 
+// Admin Bulk Delete route
+app.post('/api/admin/files/delete-bulk', isAdmin, (req, res) => {
+    const { filenames } = req.body;
+    if (!Array.isArray(filenames)) {
+        return res.status(400).send({ message: 'filenames must be an array' });
+    }
+
+    const metadata = loadMetadata();
+    const deleted = [];
+    const failed = [];
+
+    filenames.forEach(filename => {
+        const filePath = path.join(uploadDir, filename);
+        if (fs.existsSync(filePath)) {
+            try {
+                fs.unlinkSync(filePath);
+                delete metadata[filename];
+                deleted.push(filename);
+            } catch (err) {
+                failed.push(filename);
+            }
+        } else {
+            failed.push(filename);
+        }
+    });
+
+    saveMetadata(metadata);
+    res.send({ 
+        message: `Deleted ${deleted.length} files. Failed to delete ${failed.length} files.`,
+        deleted,
+        failed 
+    });
+});
+
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });
