@@ -1,0 +1,26 @@
+services:
+  backend:
+    build:
+      context: ../server
+    container_name: file_upload_backend
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+    volumes:
+      - ../uploads:/app/uploads
+
+  frontend:
+    image: nginx:alpine
+    container_name: file_upload_frontend
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ../client/dist:/usr/share/nginx/html:ro
+      - ./nginx.prod.conf:/etc/nginx/nginx.conf:ro
+      - ../uploads:/app/uploads:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      - backend
