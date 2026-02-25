@@ -19,6 +19,7 @@ function Home() {
   const [sessionUploads, setSessionUploads] = useState<UploadedFile[]>([]);
   const [selectedFilenames, setSelectedFilenames] = useState<string[]>([]);
   const [previewFile, setPreviewFile] = useState<UploadedFile | null>(null);
+  const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isImage = (filename: string) => /\.(jpg|jpeg|png|gif|webp)$/i.test(filename);
@@ -47,10 +48,25 @@ function Home() {
     }
   };
 
-  const toggleSelect = (filename: string) => {
-    setSelectedFilenames(prev => 
-      prev.includes(filename) ? prev.filter(f => f !== filename) : [...prev, filename]
-    );
+  const toggleSelect = (index: number, event: React.MouseEvent) => {
+    const filename = sessionUploads[index].filename;
+    let newSelected = [...selectedFilenames];
+
+    if (event.shiftKey && lastSelectedIndex !== null) {
+      const start = Math.min(lastSelectedIndex, index);
+      const end = Math.max(lastSelectedIndex, index);
+      const rangeFilenames = sessionUploads.slice(start, end + 1).map(f => f.filename);
+      const uniqueRange = Array.from(new Set([...newSelected, ...rangeFilenames]));
+      setSelectedFilenames(uniqueRange);
+    } else {
+      if (newSelected.includes(filename)) {
+        newSelected = newSelected.filter(f => f !== filename);
+      } else {
+        newSelected.push(filename);
+      }
+      setSelectedFilenames(newSelected);
+    }
+    setLastSelectedIndex(index);
   };
 
   const deleteSelected = async () => {
@@ -65,6 +81,7 @@ function Home() {
       if (response.ok) {
         setSessionUploads(prev => prev.filter(f => !selectedFilenames.includes(f.filename)));
         setSelectedFilenames([]);
+        setLastSelectedIndex(null);
         alert('Deleted successfully');
       }
     } catch (error) {
@@ -103,11 +120,11 @@ function Home() {
         <div className="file-list-container">
           <h3 style={{ margin: '3rem 0 1.5rem', fontSize: '1.5rem' }}>Recently Uploaded</h3>
           <div className="file-grid">
-            {sessionUploads.map((file) => (
+            {sessionUploads.map((file, index) => (
               <div 
                 key={file.filename} 
                 className={`file-card ${selectedFilenames.includes(file.filename) ? 'selected' : ''}`}
-                onClick={() => toggleSelect(file.filename)}
+                onClick={(e) => toggleSelect(index, e)}
               >
                 <div className="checkbox-custom"></div>
                 <div className="preview-container">
@@ -145,7 +162,7 @@ function Home() {
         <div className="bulk-actions">
           <span style={{color: 'white', fontWeight: 500}}>{selectedFilenames.length} selected</span>
           <button className="btn btn-danger" onClick={deleteSelected}>Delete</button>
-          <button className="btn" style={{ background: 'rgba(255,255,255,0.1)', color: 'white' }} onClick={() => setSelectedFilenames([])}>Cancel</button>
+          <button className="btn" style={{ background: 'rgba(255,255,255,0.1)', color: 'white' }} onClick={() => {setSelectedFilenames([]); setLastSelectedIndex(null);}}>Cancel</button>
         </div>
       )}
     </div>
