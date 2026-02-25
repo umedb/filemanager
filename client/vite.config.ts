@@ -7,7 +7,10 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/upload': 'http://localhost:5000',
-      '/files': 'http://localhost:5000'
+      '/files': 'http://localhost:5000',
+      '/api': 'http://localhost:5000',
+      '/download': 'http://localhost:5000',
+      '/uploads': 'http://localhost:5000'
     }
   }
 })

@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import './Home.css';
 
 interface UploadedFile {
@@ -16,13 +16,28 @@ const CloudIcon = () => (
 function Home() {
   const [uploadStatus, setUploadStatus] = useState<string>('');
   const [isDragging, setIsDragging] = useState(false);
-  const [sessionUploads, setSessionUploads] = useState<UploadedFile[]>([]);
+  const [allFiles, setAllFiles] = useState<UploadedFile[]>([]);
   const [selectedFilenames, setSelectedFilenames] = useState<string[]>([]);
   const [previewFile, setPreviewFile] = useState<UploadedFile | null>(null);
   const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isImage = (filename: string) => /\.(jpg|jpeg|png|gif|webp)$/i.test(filename);
+
+  const fetchFiles = async () => {
+    try {
+      const response = await fetch('/files');
+      if (response.ok) {
+        setAllFiles(await response.json());
+      }
+    } catch (error) {
+      console.error('Error fetching files:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchFiles();
+  }, []);
 
   const handleUpload = async (files: File[]) => {
     if (files.length === 0) return;
@@ -38,7 +53,7 @@ function Home() {
       const data = await response.json();
       if (response.ok) {
         setUploadStatus('Upload successful!');
-        setSessionUploads(prev => [...data.files, ...prev]);
+        fetchFiles(); // Refresh list after upload
         setTimeout(() => setUploadStatus(''), 3000);
       } else {
         setUploadStatus(data.message || 'Upload failed');
@@ -49,13 +64,13 @@ function Home() {
   };
 
   const toggleSelect = (index: number, event: React.MouseEvent) => {
-    const filename = sessionUploads[index].filename;
+    const filename = allFiles[index].filename;
     let newSelected = [...selectedFilenames];
 
     if (event.shiftKey && lastSelectedIndex !== null) {
       const start = Math.min(lastSelectedIndex, index);
       const end = Math.max(lastSelectedIndex, index);
-      const rangeFilenames = sessionUploads.slice(start, end + 1).map(f => f.filename);
+      const rangeFilenames = allFiles.slice(start, end + 1).map(f => f.filename);
       const uniqueRange = Array.from(new Set([...newSelected, ...rangeFilenames]));
       setSelectedFilenames(uniqueRange);
     } else {
@@ -79,7 +94,7 @@ function Home() {
         body: JSON.stringify({ filenames: selectedFilenames }),
       });
       if (response.ok) {
-        setSessionUploads(prev => prev.filter(f => !selectedFilenames.includes(f.filename)));
+        setAllFiles(prev => prev.filter(f => !selectedFilenames.includes(f.filename)));
         setSelectedFilenames([]);
         setLastSelectedIndex(null);
         alert('Deleted successfully');
@@ -116,11 +131,11 @@ function Home() {
         {uploadStatus && <div className="upload-status">{uploadStatus}</div>}
       </div>
 
-      {sessionUploads.length > 0 && (
+      {allFiles.length > 0 && (
         <div className="file-list-container">
-          <h3 style={{ margin: '3rem 0 1.5rem', fontSize: '1.5rem' }}>Recently Uploaded</h3>
+          <h3 style={{ margin: '3rem 0 1.5rem', fontSize: '1.5rem' }}>All Files</h3>
           <div className="file-grid">
-            {sessionUploads.map((file, index) => (
+            {allFiles.map((file, index) => (
               <div 
                 key={file.filename} 
                 className={`file-card ${selectedFilenames.includes(file.filename) ? 'selected' : ''}`}
