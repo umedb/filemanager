@@ -126,21 +126,23 @@ app.use('/uploads', express.static(uploadDir));
 
 app.get('/download/:filename', (req, res) => {
     const filename = req.params.filename;
-    const filePath = path.join(uploadDir, filename);
+    // Prevent Path Traversal on download
+    const safeFilename = path.basename(filename);
+    const filePath = path.join(uploadDir, safeFilename);
 
     if (fs.existsSync(filePath)) {
         const metadata = loadMetadata();
-        if (metadata[filename]) {
-            metadata[filename].downloads += 1;
+        if (metadata[safeFilename]) {
+            metadata[safeFilename].downloads += 1;
             saveMetadata(metadata);
         }
-        res.download(filePath, metadata[filename]?.originalName || filename);
+        res.download(filePath, metadata[safeFilename]?.originalName || safeFilename);
     } else {
         res.status(404).send({ message: 'File not found' });
     }
 });
 
-app.get('/files', (req, res) => {
+app.get('/files', isAdmin, (req, res) => {
     fs.readdir(uploadDir, (err, files) => {
         if (err) return res.status(500).send({ message: 'Error reading directory' });
         const metadata = loadMetadata();
@@ -191,11 +193,14 @@ app.post('/api/admin/files/delete-bulk', isAdmin, (req, res) => {
     const metadata = loadMetadata();
     const deleted = [];
     filenames.forEach(filename => {
-        const filePath = path.join(uploadDir, filename);
+        // Prevent Path Traversal by normalizing the filename
+        const safeFilename = path.basename(filename);
+        const filePath = path.join(uploadDir, safeFilename);
+
         if (fs.existsSync(filePath)) {
             fs.unlinkSync(filePath);
-            delete metadata[filename];
-            deleted.push(filename);
+            delete metadata[safeFilename];
+            deleted.push(safeFilename);
         }
     });
 
