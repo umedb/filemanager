@@ -1,11 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import './Home.css';
-
-interface UploadedFile {
-  filename: string;
-  originalName: string;
-  url: string;
-}
 
 const CloudIcon = () => (
   <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -16,28 +10,7 @@ const CloudIcon = () => (
 function Home() {
   const [uploadStatus, setUploadStatus] = useState<string>('');
   const [isDragging, setIsDragging] = useState(false);
-  const [allFiles, setAllFiles] = useState<UploadedFile[]>([]);
-  const [selectedFilenames, setSelectedFilenames] = useState<string[]>([]);
-  const [previewFile, setPreviewFile] = useState<UploadedFile | null>(null);
-  const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const isImage = (filename: string) => /\.(jpg|jpeg|png|gif|webp)$/i.test(filename);
-
-  const fetchFiles = async () => {
-    try {
-      const response = await fetch('/files');
-      if (response.ok) {
-        setAllFiles(await response.json());
-      }
-    } catch (error) {
-      console.error('Error fetching files:', error);
-    }
-  };
-
-  useEffect(() => {
-    fetchFiles();
-  }, []);
 
   const handleUpload = async (files: File[]) => {
     if (files.length === 0) return;
@@ -53,7 +26,6 @@ function Home() {
       const data = await response.json();
       if (response.ok) {
         setUploadStatus('Upload successful!');
-        fetchFiles(); // Refresh list after upload
         setTimeout(() => setUploadStatus(''), 3000);
       } else {
         setUploadStatus(data.message || 'Upload failed');
@@ -61,53 +33,6 @@ function Home() {
     } catch (error) {
       setUploadStatus('Error during upload');
     }
-  };
-
-  const toggleSelect = (index: number, event: React.MouseEvent) => {
-    const filename = allFiles[index].filename;
-    let newSelected = [...selectedFilenames];
-
-    if (event.shiftKey && lastSelectedIndex !== null) {
-      const start = Math.min(lastSelectedIndex, index);
-      const end = Math.max(lastSelectedIndex, index);
-      const rangeFilenames = allFiles.slice(start, end + 1).map(f => f.filename);
-      const uniqueRange = Array.from(new Set([...newSelected, ...rangeFilenames]));
-      setSelectedFilenames(uniqueRange);
-    } else {
-      if (newSelected.includes(filename)) {
-        newSelected = newSelected.filter(f => f !== filename);
-      } else {
-        newSelected.push(filename);
-      }
-      setSelectedFilenames(newSelected);
-    }
-    setLastSelectedIndex(index);
-  };
-
-  const deleteSelected = async () => {
-    const password = prompt("Enter admin password to delete:");
-    if (!password) return;
-    try {
-      const response = await fetch('/api/admin/files/delete-bulk', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
-        body: JSON.stringify({ filenames: selectedFilenames }),
-      });
-      if (response.ok) {
-        setAllFiles(prev => prev.filter(f => !selectedFilenames.includes(f.filename)));
-        setSelectedFilenames([]);
-        setLastSelectedIndex(null);
-        alert('Deleted successfully');
-      }
-    } catch (error) {
-      alert('Error deleting files');
-    }
-  };
-
-  const copyUrl = (url: string) => {
-    const fullUrl = `${window.location.origin}${url}`;
-    navigator.clipboard.writeText(fullUrl);
-    alert('URL copied to clipboard!');
   };
 
   return (
@@ -118,7 +43,7 @@ function Home() {
         <p style={{ color: 'var(--text-muted)' }}>Securely upload and share your files</p>
       </header>
 
-      <div 
+      <div
         className={`drop-zone ${isDragging ? 'dragging' : ''}`}
         onClick={() => fileInputRef.current?.click()}
         onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
@@ -131,55 +56,6 @@ function Home() {
         {uploadStatus && <div className="upload-status">{uploadStatus}</div>}
       </div>
 
-      {allFiles.length > 0 && (
-        <div className="file-list-container">
-          <h3 style={{ margin: '3rem 0 1.5rem', fontSize: '1.5rem' }}>All Files</h3>
-          <div className="file-grid">
-            {allFiles.map((file, index) => (
-              <div 
-                key={file.filename} 
-                className={`file-card ${selectedFilenames.includes(file.filename) ? 'selected' : ''}`}
-                onClick={(e) => toggleSelect(index, e)}
-              >
-                <div className="checkbox-custom"></div>
-                <div className="preview-container">
-                  {isImage(file.filename) ? (
-                    <img src={`/uploads/${file.filename}`} alt={file.originalName} className="preview-image" />
-                  ) : (
-                    <div style={{ color: 'var(--text-muted)', fontSize: '2rem' }}>📄</div>
-                  )}
-                </div>
-                <div className="file-info">
-                  <span className="file-name">{file.originalName}</span>
-                </div>
-                <div className="file-actions" onClick={e => e.stopPropagation()}>
-                  {isImage(file.filename) && (
-                    <button className="btn btn-primary" onClick={() => setPreviewFile(file)}>View</button>
-                  )}
-                  <button className="btn" style={{ background: 'rgba(255,255,255,0.1)', color: 'white' }} onClick={() => copyUrl(file.url)}>Link</button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {previewFile && (
-        <div className="modal-overlay" onClick={() => setPreviewFile(null)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <button className="modal-close" onClick={() => setPreviewFile(null)}>&times;</button>
-            <img src={`/uploads/${previewFile.filename}`} alt={previewFile.originalName} className="modal-image" />
-          </div>
-        </div>
-      )}
-
-      {selectedFilenames.length > 0 && (
-        <div className="bulk-actions">
-          <span style={{color: 'white', fontWeight: 500}}>{selectedFilenames.length} selected</span>
-          <button className="btn btn-danger" onClick={deleteSelected}>Delete</button>
-          <button className="btn" style={{ background: 'rgba(255,255,255,0.1)', color: 'white' }} onClick={() => {setSelectedFilenames([]); setLastSelectedIndex(null);}}>Cancel</button>
-        </div>
-      )}
     </div>
   );
 }
