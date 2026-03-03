@@ -34,8 +34,9 @@ const storage = multer.diskStorage({
     }
 });
 
-const upload = multer({ 
+const upload = multer({
     storage: storage,
+    limits: { fileSize: 100 * 1024 * 1024 }, // 100 MB limit
     fileFilter: (req, file, cb) => {
         const allowed = !/\.(exe|bat|php)$/i.test(file.originalname);
         if (allowed) {
@@ -90,7 +91,7 @@ const isAdmin = (req, res, next) => {
     if (password && password === expected) {
         next();
     } else {
-        console.warn(`[Auth Warning] Unauthorized attempt with password: ${password}`);
+        console.warn(`[Auth Warning] Unauthorized access attempt from ${req.ip}`);
         res.status(401).send({ message: 'Unauthorized' });
     }
 };
@@ -122,12 +123,22 @@ app.post('/upload', upload.array('files'), handleUploadErrors, (req, res) => {
     });
 });
 
-app.use('/uploads', express.static(uploadDir));
+app.use('/uploads', (req, res, next) => {
+    if (path.basename(req.path) === 'metadata.json') {
+        return res.status(403).send({ message: 'Forbidden' });
+    }
+    next();
+}, express.static(uploadDir));
 
 app.get('/download/:filename', (req, res) => {
     const filename = req.params.filename;
     // Prevent Path Traversal on download
     const safeFilename = path.basename(filename);
+
+    if (safeFilename === 'metadata.json') {
+        return res.status(403).send({ message: 'Forbidden' });
+    }
+
     const filePath = path.join(uploadDir, safeFilename);
 
     if (fs.existsSync(filePath)) {
@@ -140,21 +151,6 @@ app.get('/download/:filename', (req, res) => {
     } else {
         res.status(404).send({ message: 'File not found' });
     }
-});
-
-app.get('/files', isAdmin, (req, res) => {
-    fs.readdir(uploadDir, (err, files) => {
-        if (err) return res.status(500).send({ message: 'Error reading directory' });
-        const metadata = loadMetadata();
-        const fileList = files
-            .filter(file => file !== 'metadata.json')
-            .map(file => ({
-                filename: file,
-                originalName: metadata[file]?.originalName || file,
-                url: `/download/${file}`
-            }));
-        res.send(fileList);
-    });
 });
 
 app.post('/api/admin/verify', (req, res) => {

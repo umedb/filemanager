@@ -59,7 +59,7 @@ function Admin() {
     if (stored) { setPassword(stored); setIsLoggedIn(true); }
   }, []);
 
-  useEffect(() => { if (isLoggedIn) fetchFiles(); }, [isLoggedIn]);
+  useEffect(() => { if (isLoggedIn) fetchFiles(); }, [isLoggedIn]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isImage = (filename: string) => /\.(jpg|jpeg|png|gif|webp)$/i.test(filename);
 
